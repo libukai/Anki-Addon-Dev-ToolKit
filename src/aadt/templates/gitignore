@@ -1,0 +1,35 @@
+# Build output
+build/
+dist/
+*.ankiaddon
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+.env
+
+# uv
+.venv/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# aadt specific
+.aadt/
+
+# vaildator
+.mypy_cache
+.ruff_cache

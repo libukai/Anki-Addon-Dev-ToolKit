@@ -1,0 +1,9 @@
+{
+  "display_name": "Anki Add-on Builder - Sample Project",
+  "module_name": "sample",
+  "repo_name": "aab-sample-project",
+  "ankiweb_id": "123456789",
+  "author": "Glutanimate",
+  "conflicts": [],
+  "targets": ["qt6"]
+}

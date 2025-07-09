@@ -1,0 +1,281 @@
+# {display_name}
+
+[English](#english) | [中文](#中文)
+
+---
+
+## English
+
+An Anki add-on created with [Anki Add-on Developer Tools (AADT)](https://github.com/libukai/aadt).
+
+### Description
+
+TODO: Add description of your add-on here.
+
+### Installation
+
+#### From AnkiWeb
+
+TODO: Add AnkiWeb installation instructions when published.
+
+#### Manual Installation
+
+1. Download the latest release from GitHub
+2. In Anki, go to Tools → Add-ons → Install from file
+3. Select the downloaded .ankiaddon file
+
+### Development
+
+This project uses [AADT](https://github.com/libukai/aadt) for modern Anki add-on development with Qt6 support.
+
+#### Quick Start
+
+```bash
+# Create a new add-on project (using uvx - recommended)
+mkdir {repo_name} && cd {repo_name}
+uvx aadt init
+
+# Dependencies are automatically installed during init
+# Includes: Anki/AQT, MyPy, Ruff, Pytest, and AADT
+# Plus all required template architecture
+
+# Start developing!
+uv run aadt test
+```
+
+#### Development Workflow
+
+```bash
+# Initial setup (one-time)
+uvx aadt init                    # Initialize project with all dependencies
+
+# Daily development (use local aadt)
+uv run aadt ui                   # Compile UI files
+uv run aadt test                 # Test with Anki
+uv run aadt build                # Build add-on
+```
+
+#### Dependencies
+
+This project uses a single `dev` group containing all development dependencies:
+
+```bash
+# Install/update all development dependencies
+uv sync --group dev
+
+# Includes:
+# - aqt>=25.2.7                 # Anki Qt interface (includes anki, pyqt6, and all UI dependencies)
+# - aadt>=1.1.0                 # Build tools (includes additional PyQt6 for UI compilation)
+# - mypy>=1.16.1                # Static type checking
+# - ruff>=0.12.1                # Fast linting and formatting
+# - pytest>=8.0.0               # Testing framework
+```
+
+**Note:** `aqt` automatically includes `anki` and `pyqt6` dependencies. AADT provides additional PyQt6 for UI compilation tools.
+
+#### Building
+
+```bash
+# Build (defaults to local testing)
+uv run aadt build
+
+# Or explicitly specify build target
+uv run aadt build -d local       # Local testing
+uv run aadt build -d ankiweb     # AnkiWeb submission
+```
+
+#### Testing
+
+```bash
+# Test with Anki (automatically links and launches)
+uv run aadt test
+
+# Or manually manage linking
+uv run aadt link              # Create development link
+uv run aadt link --unlink     # Remove development link
+
+# Run unit tests (if available)
+uv run pytest
+```
+
+**Development Testing:**
+- `aadt test` automatically links your add-on and launches Anki
+- `aadt link` creates a symbolic link from your source to Anki's addon directory
+- Supports macOS, Windows (junction), and Linux
+- `aadt link --unlink` removes the development link when finished
+- Your changes are immediately available in Anki without manual copying
+
+#### Code Quality
+
+```bash
+# Check code style and types
+uv run ruff check .              # Linting
+uv run ruff format .             # Auto-formatting
+uv run mypy src/                 # Type checking
+```
+
+#### Project Structure
+
+- `src/{module_name}/` - Main Python package (src-layout)
+  - `__init__.py` - Add-on entry point and main functionality
+- `ui/designer/` - Qt Designer .ui files
+- `ui/resources/` - UI resources (icons, styles, etc.)
+- `addon.json` - Add-on configuration
+- `pyproject.toml` - Project configuration and dependencies
+- `.python-version` - Python version specification
+
+### Features
+
+- **Modern Python 3.13+** with type hints
+- **Qt6 only** - no legacy Qt5 support
+- **src-layout** - best practice project structure
+- **uv-based** - fast dependency management
+- **Comprehensive tooling** - MyPy, Ruff, Pytest included
+- **Direct resource paths** - no QRC compilation needed
+
+### License
+
+TODO: Add license information.
+
+### Author
+
+{author}
+
+---
+
+## 中文
+
+本项目是使用 [Anki Add-on Developer Tools (AADT)](https://github.com/libukai/aadt) 创建的 Anki 插件。
+
+### 描述
+
+TODO: 在此添加插件的详细描述。
+
+### 安装
+
+#### 从 AnkiWeb 安装
+
+TODO: 插件发布后添加 AnkiWeb 安装说明。
+
+#### 手动安装
+
+1. 从 GitHub 下载最新版本
+2. 在 Anki 中，转到 工具 → 插件 → 从文件安装
+3. 选择下载的 .ankiaddon 文件
+
+### 开发
+
+本项目使用 [AADT](https://github.com/libukai/aadt) 进行现代化的 Anki 插件开发，支持 Qt6。
+
+#### 快速开始
+
+```bash
+# 创建新的插件项目（推荐使用 uvx）
+mkdir {repo_name} && cd {repo_name}
+uvx aadt init
+
+# 依赖会在初始化时自动安装
+# 包括：Anki/AQT、MyPy、Ruff、Pytest 和 AADT
+# 以及配置所需要的模板架构
+
+# 开始开发！
+uv run aadt test
+```
+
+#### 开发工作流
+
+```bash
+# 初始设置（一次性）
+uvx aadt init                    # 初始化项目并安装所有依赖
+
+# 日常开发（使用本地 aadt）
+uv run aadt ui                   # 编译 UI 文件
+uv run aadt test                 # 在 Anki 中测试
+uv run aadt build                # 构建插件
+```
+
+#### 依赖管理
+
+本项目使用单一的 `dev` 组管理所有开发依赖：
+
+```bash
+# 安装/更新所有开发依赖
+uv sync --group dev
+
+# 包含的依赖：
+# - aqt>=25.2.7                 # Anki Qt 界面（包含 anki、pyqt6 和所有界面依赖）
+# - aadt>=1.1.0                 # 构建工具（包含额外的 PyQt6 用于 UI 编译）
+# - mypy>=1.16.1                # 静态类型检查
+# - ruff>=0.12.1                # 快速代码检查和格式化
+# - pytest>=8.0.0               # 测试框架
+```
+
+**注意：** `aqt` 自动包含 `anki` 和 `pyqt6` 依赖。AADT 提供额外的 PyQt6 用于 UI 编译工具。
+
+#### 构建
+
+```bash
+# 构建（默认为本地测试版本）
+uv run aadt build
+
+# 或显式指定构建目标
+uv run aadt build -d local       # 本地测试版本
+uv run aadt build -d ankiweb     # AnkiWeb 提交版本
+```
+
+#### 测试
+
+```bash
+# 测试插件（自动链接并启动 Anki）
+uv run aadt test
+
+# 或手动管理链接
+uv run aadt link              # 从源码创建符号链接到 Anki 插件目录
+uv run aadt link --unlink     # 从 Anki 插件目录移除
+
+# 运行单元测试（如果有）
+uv run pytest
+```
+
+**开发测试说明：**
+- `aadt test` 自动链接你的插件并启动 Anki
+- `aadt link` 从源代码目录创建符号链接到 Anki 插件目录
+- 支持 macOS、Windows（junction）和 Linux
+- `aadt link --unlink` 在完成后移除开发链接
+- 你的更改会立即在 Anki 中生效，无需手动复制
+
+#### 代码质量
+
+```bash
+# 检查代码风格和类型
+uv run ruff check .              # 代码检查
+uv run ruff format .             # 自动格式化
+uv run mypy src/                 # 类型检查
+```
+
+#### 项目结构
+
+- `src/{module_name}/` - 主 Python 包（src-layout 结构）
+  - `__init__.py` - 插件入口点和主要功能
+- `ui/designer/` - Qt Designer .ui 文件
+- `ui/resources/` - UI 资源文件（图标、样式等）
+- `addon.json` - 插件配置文件
+- `pyproject.toml` - 项目配置和依赖
+- `.python-version` - Python 版本规范
+
+### 特性
+
+- **现代 Python 3.13+** 支持类型提示
+- **仅支持 Qt6** - 不包含 Qt5 遗留代码
+- **src-layout 结构** - 最佳实践项目布局
+- **基于 uv** - 快速依赖管理
+- **完整工具链** - 包含 MyPy、Ruff、Pytest
+- **直接资源路径** - 无需 QRC 编译
+
+### 许可证
+
+TODO: 添加许可证信息。
+
+### 作者
+
+{author}

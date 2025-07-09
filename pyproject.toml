@@ -1,0 +1,123 @@
+[project]
+name = "aadt"
+version = "1.2.1"
+description = "Anki Addon Dev ToolKit"
+authors = [{ name = "Libukai" }]
+license = { text = "AGPL-3.0-or-later" }
+requires-python = ">=3.13"
+readme = "README.md"
+keywords = ["anki", "development", "build-tools"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Build Tools",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: POSIX",
+    "Operating System :: MacOS",
+]
+
+dependencies = ["jsonschema>=4.4.0", "whichcraft>=0.6.1", "questionary>=2.1.0"]
+
+[dependency-groups]
+dev = [
+    "anki>=25.6b7",
+    "aqt>=25.6b7",
+    "ruff>=0.12.1",
+    "ty>=0.0.1a14",
+    "pytest>=8.3.4",
+    "pytest-cov>=6.0.0",
+    "pytest-mock>=3.14.0",
+]
+
+[project.urls]
+Repository = "https://github.com/libukai/Anki-Addon-Dev-ToolKit"
+Homepage = "https://github.com/libukai/Anki-Addon-Dev-ToolKit"
+
+[project.scripts]
+aadt = "aadt.cli:main"
+
+[build-system]
+requires = ["uv_build"]
+build-backend = "uv_build"
+
+[tool.uv]
+package = true
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # Pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "N",   # pep8-naming
+    "S",   # flake8-bandit (安全)
+    "B",   # flake8-bugbear (Bugs)
+    "A",   # flake8-builtins
+    "C4",  # flake8-comprehensions
+    "C90", # mccabe (复杂度)
+    "SIM", # flake8-simplify (简化代码)
+    "TID", # flake8-tidy-imports
+    "RUF", # Ruff-specific rules
+]
+
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "B008"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.ty.environment]
+root = ["./src/aadt", "./tests"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--cov=aadt",
+    "--cov-report=term-missing",
+    "--cov-report=html:htmlcov",
+    "--cov-report=xml",
+    "--cov-fail-under=20",
+]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
+
+[tool.coverage.run]
+source = ["src/aadt"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__pycache__/*",
+    "*/conftest.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]

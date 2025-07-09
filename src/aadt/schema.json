@@ -1,0 +1,142 @@
+{
+  "type": "object",
+  "properties": {
+    "display_name": {
+      "type": "string"
+    },
+    "module_name": {
+      "type": "string"
+    },
+    "repo_name": {
+      "type": "string"
+    },
+    "ankiweb_id": {
+      "type": "string"
+    },
+    "author": {
+      "type": "string"
+    },
+    "contact": {
+      "type": "string"
+    },
+    "homepage": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "copyright_start": {
+      "type": "number"
+    },
+    "conflicts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "targets": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["qt6"]
+      }
+    },
+    "min_anki_version": {
+      "type": "string",
+      "description": "SemVer version string describing the minimum required Anki version to run this add-on."
+    },
+    "max_anki_version": {
+      "type": "string",
+      "description": "SemVer version string describing the maximum supported Anki version of this add-on"
+    },
+    "tested_anki_version": {
+      "type": "string",
+      "description": "SemVer version string describing the latest Anki version this add-on was tested on."
+    },
+    "ankiweb_conflicts_with_local": {
+      "type": "boolean",
+      "default": true
+    },
+    "local_conflicts_with_ankiweb": {
+      "type": "boolean",
+      "default": true
+    },
+    "build_config": {
+      "type": "object",
+      "properties": {
+        "output_dir": {
+          "type": "string",
+          "default": "dist",
+          "description": "Directory where build artifacts are stored"
+        },
+        "trash_patterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": ["*.pyc", "*.pyo", "__pycache__"],
+          "description": "File patterns to clean during build"
+        },
+        "license_paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [".", "resources"],
+          "description": "Paths to search for LICENSE files"
+        },
+        "archive_exclude_patterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [".git", ".gitignore", "__pycache__", "*.pyc", "*.pyo", ".venv", "venv", ".env", "node_modules", ".DS_Store", "build", "dist", ".pytest_cache", ".mypy_cache", ".ruff_cache", "*.ankiaddon", "*.zip", ".aab", "Thumbs.db", "*.swp", "*.swo"],
+          "description": "File patterns to exclude when archiving in non-Git environments"
+        },
+        "ui_config": {
+          "type": "object",
+          "properties": {
+            "ui_dir": {
+              "type": "string",
+              "default": "ui",
+              "description": "Directory containing UI-related files"
+            },
+            "designer_dir": {
+              "type": "string",
+              "default": "designer",
+              "description": "Directory containing Qt Designer .ui files"
+            },
+            "resources_dir": {
+              "type": "string",
+              "default": "resources",
+              "description": "Directory containing UI resources"
+            },
+            "forms_package": {
+              "type": "string",
+              "default": "forms",
+              "description": "Python package name for compiled forms"
+            },
+            "exclude_optional_resources": {
+              "type": "boolean",
+              "default": false,
+              "description": "Whether to exclude optional resources from build"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "display_name",
+    "module_name",
+    "repo_name",
+    "author",
+    "conflicts",
+    "targets"
+  ]
+}
