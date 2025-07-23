@@ -466,11 +466,11 @@ class UIBuilder:
 
     def _copy_ui_resources(self) -> None:
         """
-        Copy UI resources from ui/resources/ to src/module/resources/ with filtering
+        Copy UI resources from ui/resources/ to src/module/gui/resources/ with filtering
         """
         from aadt.utils import copy_recursively
 
-        target_resources_path = self._gui_path.parent / "resources"
+        target_resources_path = self._gui_path / "resources"
         ui_config = self._addon_config.build_config.ui_config
 
         logging.info("Copying UI resources...")
@@ -501,6 +501,93 @@ class UIBuilder:
                     target_dir = target_resources_path / item.name
                     copy_recursively(str(item), str(target_dir))
                 logging.debug("Copied directory: %s", item.name)
+
+        # Ensure resources directory is a Python package for importlib.resources support
+        if ui_config.create_resources_package:
+            resources_init_file = target_resources_path / "__init__.py"
+            if not resources_init_file.exists():
+                self._create_resources_init_file(resources_init_file)
+
+    def _create_resources_init_file(self, init_path: Path) -> None:
+        """
+        Create __init__.py for resources package to support importlib.resources.
+
+        This enables modern Python resource management with full compatibility for:
+        - .zip file distribution (Anki add-ons)
+        - Cross-platform resource access
+        - Python 3.9+ standard library support
+        """
+        content = f'''\
+"""
+{self._addon_config.display_name}资源管理 - 现代Python最佳实践
+
+使用importlib.resources进行资源访问, 支持:
+- 打包兼容性(.zip文件分发)
+- 平台无关性
+- Python 3.9+ 标准库支持
+- 完美兼容Anki插件运行环境
+"""
+
+from importlib import resources
+from pathlib import Path
+
+
+def get_icon_path(icon_name: str) -> str:
+    """
+    获取图标文件的完整路径 - 现代Python资源管理
+
+    支持多种部署方式:
+    - 开发环境: 直接文件访问
+    - 生产环境: .zip打包分发
+    - Anki插件: 包内资源访问
+
+    Args:
+        icon_name: 图标文件名(如 "wait.png")
+
+    Returns:
+        图标文件的完整路径字符串, 如果不存在返回空字符串
+    """
+    try:
+        # Python 3.9+ 推荐的 importlib.resources 语法
+        files = resources.files(__package__)
+        icon_file = files / icon_name
+        if icon_file.is_file():
+            return str(icon_file)
+
+        # 降级方案: pathlib(开发环境)
+        fallback_path = Path(__file__).parent / icon_name
+        if fallback_path.exists():
+            return str(fallback_path)
+
+    except Exception as e:
+        # 使用Anki标准日志系统记录错误但不中断程序
+        from aqt import mw
+
+        if mw and mw.addonManager:
+            logger = mw.addonManager.get_logger(__name__)
+            logger.warning(f"图标资源获取失败 {{icon_name}}: {{e}}")
+        # 对于资源加载错误, 不显示用户界面错误, 只记录日志
+
+    # 返回空字符串, QIcon会创建空图标而不是崩溃
+    return ""
+
+
+def get_resource_path(resource_name: str) -> str | None:
+    """
+    通用资源路径获取函数
+
+    Args:
+        resource_name: 资源文件名
+
+    Returns:
+        资源文件路径, 如果不存在返回None
+    """
+    path = get_icon_path(resource_name)
+    return path if path else None
+'''
+        with init_path.open("w", encoding="utf-8") as f:
+            f.write(content)
+        logging.debug("Created resources __init__.py for importlib.resources support")
 
     def _contains_optional_directory(self, directory: Path) -> bool:
         """Check if directory contains an 'optional' subdirectory"""

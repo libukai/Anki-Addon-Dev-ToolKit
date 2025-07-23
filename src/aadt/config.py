@@ -54,6 +54,7 @@ class UIConfig:
     resources_dir: str = "resources"
     forms_package: str = "forms"
     exclude_optional_resources: bool = False
+    create_resources_package: bool = True
 
     @classmethod
     def from_dict(cls, data: dict[str, Any] | None) -> "UIConfig":

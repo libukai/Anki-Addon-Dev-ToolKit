@@ -2,31 +2,33 @@
 
 ## 📖 文档说明
 
-此文档基于 **Anki 25.06+** 和 **aqt 25.06+** 源码实际分析，提供完整的API结构、现代操作模式和集成方案。
+此文档基于 **anki 25.6+** 和 **aqt 25.6+** 源码实际分析，提供完整的API结构、现代操作模式和集成方案。
 
-**目标版本**: Anki 25.06+ (buildhash: ad34b76f)  
-**开发框架**: AADT (Anki Addon Developer Tools)  
-**技术栈**: Qt6-only, Python 3.10+, 现代类型安全
+---
+
+## 技术栈
+
+- 开发语言： Python 3.13，充分利用静态类型特性。
+- UI/GUI 框架： Qt 6.9，通过 aqt.qt.* 导入其 Python 绑定
 
 ---
 
 ## 🎯 开发决策表
 
-| 用户需求 | 推荐模式 | 核心API | 必须避免 | 技术要点 |
-|---------|----------|---------|----------|----------|
-| 创建新插件 | AADT完整模板 | `gui_hooks`, `CollectionOp` | Qt5导入、legacy hooks | 生命周期管理 |
-| 添加菜单项 | QAction集成 | `mw.form.menuTools` | 状态检查缺失 | 菜单层次结构 |
-| 处理笔记 | CollectionOp模式 | `col.add_note()`, `col.update_note()` | 旧版方法名、手动线程 | OpChanges返回值 |
-| 搜索卡片/笔记 | QueryOp + SearchNode | `col.build_search_string()` | 字符串搜索、阻塞调用 | SearchNode构建 |
-| 添加UI对话框 | Qt6对话框 | `aqt.qt.*` | 直接PyQt6导入 | 强制 aqt.qt 兼容层使用 |
-| 处理用户事件 | 钩子系统 | `gui_hooks.*` | legacy anki.hooks | 类型安全钩子 |
-| 批量操作 | 分离式批处理 | `CollectionOp` + `uses_collection=False` | 手动循环、混合网络DB操作 | 网络批处理+单一撤销点 |
-| 错误处理 | 结构化异常系统 | `AnkiException`, `.failure()` | 通用Exception、静默失败 | 继承链、用户友好信息 |
-| 网络请求 | 连接池+异步 | `HttpClient`, `TaskManager` | urllib.request、同步调用 | 限流、重试、缓存 |
+| 用户需求      | 推荐模式             | 新版API                                  | 技术要点               | 避免使用                 |
+| ------------- | -------------------- | ---------------------------------------- | ---------------------- | ------------------------ |
+| 添加菜单项    | QAction集成          | `mw.form.menuTools`                      | 菜单层次结构           | 状态检查缺失             |
+| 处理用户事件  | 钩子系统             | `gui_hooks.*`                            | 类型安全钩子           | legacy anki.hooks        |
+| 处理笔记      | CollectionOp模式     | `col.add_note()`, `col.update_note()`    | OpChanges返回值        | 旧版方法名、手动线程     |
+| 搜索卡片/笔记 | QueryOp + SearchNode | `col.build_search_string()`              | SearchNode构建         | 字符串搜索、阻塞调用     |
+| UI对话框      | aqt 包装的 Qt6 兼容层      | `aqt.qt.*`                               | 强制 aqt.qt 兼容层使用 | 直接PyQt6导入            |
+| 网络请求      | 连接池+异步          | `HttpClient`, `TaskManager`              | 限流、重试、缓存       | urllib.request、同步调用 |
+| 批量操作      | 分离式批处理         | `CollectionOp` + `uses_collection=False` | 网络批处理+单一撤销点  | 手动循环、混合网络DB操作 |
+| 错误处理      | 结构化异常系统       | `AnkiException`, `.failure()`            | 继承链、用户友好信息   | 通用Exception、静默失败  |
 
 ---
 
-## 🔄 25.06+ 版本特定变化
+## 🔄 25.6+ 版本特定变化<!--  -->
 
 ### 新功能
 1. **增强的操作系统**: 更健壮的CollectionOp/QueryOp，更好的错误处理
@@ -37,15 +39,15 @@
 6. **Qt6纯实现**: 完全移除Qt5兼容代码
 
 ### 从早期版本的破坏性变化
-1. **Qt5移除**: 对基于Qt5的插件无向后兼容
-2. **钩子系统迁移**: 遗留anki.hooks在gui_hooks之前弃用  
-3. **操作返回类型**: 所有操作现在返回OpChanges变体
-4. **Python版本**: 需要Python 3.10+（启动时检查）
+1. **Qt5移除**: 对基于 Qt5 的插件无向后兼容
+2. **钩子系统迁移**: 遗留 anki.hooks 使用 gui_hooks 替换  
+3. **操作返回类型**: 所有操作现在返回 OpChanges 变体
+4. **Python版本**: 需要 Python 3.10+（启动时检查）
 5. **类型安全**: 整个代码库更严格的类型检查
 
 ### 兼容性要求
-- **Python**: 3.10+（实际运行时检查：3.9+，但AADT使用3.13）
-- **Qt**: Qt6.2+（启动时强制）
+- **Python**: 3.13+（实际运行时检查：3.13+）
+- **Qt**: Qt6.9+（启动时强制）
 - **类型提示**: 现代联合语法（`str | None`，不是`Optional[str]`）
 - **异步模式**: 必须使用CollectionOp/QueryOp进行后台操作
 
@@ -137,7 +139,7 @@ from anki.models import NotetypeDict
 
 ### ❌ 禁止使用的导入模式
 ```python
-# 以下导入会在更新中失效，AI必须避免
+# 以下导入是老版方式，新版开发必须避免
 from PyQt6.QtWidgets import QDialog, QPushButton  # ❌ 直接PyQt6导入
 from PyQt6.QtCore import pyqtSignal, QTimer       # ❌ 直接PyQt6导入
 from anki.hooks import addHook, runHook           # ❌ 旧版钩子系统
@@ -151,7 +153,7 @@ from anki.utils import ids2str                    # ❌ 已弃用工具函数
 
 ### Collection类概述
 **主要访问**: `mw.col` (类型: `anki.collection.Collection`)
-**总公共方法**: 139个方法（经过分析）
+**总公共方法**: 139个方法
 **⚠️ 注意**: 始终在操作前检查 `mw.col` 的存在性
 
 ### 笔记操作API（27个方法）
@@ -455,28 +457,26 @@ gui_hooks.operation_did_execute.append(handle_operation_changes)
 
 ## 🖥️ PyQt6 集成
 
-### aqt.qt兼容层（关键）
-**文件**: `/aqt/qt/__init__.py` → `/aqt/qt/qt6.py`
+### aqt.qt 兼容层（关键）
+
+应该始终从 aqt.qt 导入以保持兼容性，而不要直接导入PyQt6模块
 
 ```python
 # 关键：始终从aqt.qt导入以保持兼容性
 from aqt.qt import *  # 这从qt6.py导入
 # 直接导入类，而不是模块
 from aqt.qt import QDialog, QPushButton
+```
 
-# qt6.py包含纯PyQt6导入：
+在 `aqt` 包中，`/aqt/qt/__init__.py` 从 `/aqt/qt/qt6.py` 导入了所有 PyQt6 模块，因此不需要再导入模块
+
+```python
+# qt6.py包含纯PyQt6导入，因此不需要再导入模块
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 from PyQt6.QtWebEngineWidgets import *
 # ... 所有PyQt6模块
-```
-
-**Qt版本需求**（实际检查）：
-```python
-# 来自aqt/qt/__init__.py第41-48行
-if qtmajor == 6 and qtminor < 2:
-    raise Exception("Anki不支持您的Qt版本。")
 ```
 
 ### MainWindow类结构（AnkiQt）
@@ -541,6 +541,143 @@ class StatefulAddon:
         if changes.card:
             self.update_card_display()
 ```
+
+### QWebEngine 内置浏览器最佳实践
+
+**基于实际经验总结：在Anki 25.06+环境中集成内置浏览器的完整方案**
+
+#### 🚀 核心实现模式
+
+```python
+from aqt.qt import QDialog, QUrl, QWebEngineProfile, QWebEngineView, pyqtSignal
+import logging
+
+logger = logging.getLogger("your_addon")
+
+class LoginWebEngineView(QWebEngineView):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # 1. 关键：绑定默认Profile和Cookie存储
+        self.profile = QWebEngineProfile.defaultProfile()
+        self.profile.setHttpUserAgent(USER_AGENT)
+        self.cookieStore = self.profile.cookieStore()
+        self.cookieStore.cookieAdded.connect(self.onCookieAdd)
+        
+        # 2. 关键：必须调用show()以确保WebView正确显示
+        self.show()
+        
+        # 3. Cookie收集机制
+        self._cookies = {}
+    
+    def createWindow(self, windowType):
+        """
+        关键：重写createWindow方法防止外部浏览器重定向
+        
+        问题根因：target="_blank" 链接会触发createWindow()
+        解决方案：返回self让新窗口请求在当前窗口中打开
+        说明：这是目前唯一的解决方案，Qt6没有内置参数可以控制此行为
+        """
+        logger.debug(f"createWindow called with type: {windowType}")
+        return self  # 返回self，让新窗口请求在当前窗口中打开
+    
+    def onCookieAdd(self, cookie):
+        """Cookie收集：实时获取浏览器Cookie"""
+        name = cookie.name().data().decode("utf-8")
+        value = cookie.value().data().decode("utf-8")
+        self._cookies[name] = value
+    
+    @property
+    def cookie(self) -> dict:
+        return self._cookies
+
+class LoginDialog(QDialog):
+    loginSucceed = pyqtSignal(str)
+    
+    def __init__(self, loginUrl, loginCheckCallbackFn, parent=None):
+        super().__init__(parent)
+        self.url = QUrl(loginUrl)
+        self.loginCheckCallbackFn = loginCheckCallbackFn
+        
+        # UI设置
+        self.setupUi(self)
+        self.page = LoginWebEngineView(self)
+        self.pageContainer.addWidget(self.page)
+        
+        # 加载页面和连接信号
+        self.page.load(self.url)
+        self.makeConnection()
+
+# 正确的对话框显示方式
+def show_login_dialog(parent):
+    """显示登录对话框的正确方式"""
+    try:
+        # 创建对话框
+        login_dialog = LoginDialog(
+            loginUrl="https://example.com/login",
+            loginCheckCallbackFn=check_login,
+            parent=parent
+        )
+        
+        # 设置模态属性
+        login_dialog.setModal(True)
+        
+        # 使用exec()显示模态对话框（关键！）
+        result = login_dialog.exec()
+        
+        # exec()返回后手动清理
+        login_dialog.deleteLater()
+        
+    except Exception as e:
+        logger.error(f"创建登录对话框失败: {e}")
+        showCritical(f"无法创建登录对话框: {str(e)}", parent=parent)
+```
+
+#### 🔥 关键经验点
+
+1. **显示方法选择**：
+   ```python
+   # ❌ 错误：对于模态对话框使用show()
+   self.loginDialog.show()
+   
+   # ✅ 正确：模态对话框必须使用exec()
+   self.loginDialog.setModal(True)
+   self.loginDialog.exec()  # 阻塞执行直到对话框关闭
+   ```
+
+2. **生命周期管理**：
+   ```python
+   # ❌ 错误：使用WA_DeleteOnClose导致"C++ object deleted"错误
+   self.loginDialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+   
+   # ✅ 正确：手动管理对话框生命周期
+   # exec()返回后手动清理
+   if hasattr(self, 'loginDialog') and self.loginDialog:
+       try:
+           self.loginDialog.deleteLater()
+           self.loginDialog = None
+       except RuntimeError:
+           self.loginDialog = None
+   ```
+
+3. **外部浏览器重定向问题**：
+   ```python
+   # 问题：target="_blank"链接默认在外部浏览器打开
+   # 解决：重写createWindow()方法（这是唯一的解决方案）
+   def createWindow(self, windowType):
+       return self  # 关键：返回自身而不是None
+   
+   # 注意：Qt6没有内置参数可以控制此行为，必须重写此方法
+   ```
+
+#### ⚠️ 常见陷阱
+
+1. **WebView不显示**：缺少`self.show()`调用（在WebEngineView的`__init__`中）
+2. **外部浏览器打开**：未重写`createWindow()`方法（这是必须的，Qt6没有内置配置选项）  
+3. **对话框闪退**：错误使用`WA_DeleteOnClose`属性
+4. **对象已删除错误**：生命周期管理不当
+5. **提示框不居中**：`showCritical`未传递`parent`参数
+6. **模态对话框不正确显示**：对于模态对话框必须使用`exec()`而非`show()`
 
 ---
 
@@ -642,7 +779,7 @@ def on_operation_complete(changes: OpChanges, initiator):
 
 ## 🌐 Network 网络请求
 
-### Anki 原生网络工具（推荐使用）
+### Anki 原生网络工具（强制使用）
 
 #### HttpClient - Anki 官方HTTP客户端
 
@@ -1100,14 +1237,167 @@ if ("note.flush()" in code and "for" in code):
 
 ---
 
+## 📝 Logging 日志系统
+
+### Anki 25.06+ 标准日志系统
+
+**核心原则**：使用 Anki 内置的日志管理，避免自定义 Qt 信号连接导致的崩溃问题。
+
+#### 推荐的日志使用模式
+
+```python
+from aqt import mw
+from aqt.utils import showInfo, showWarning, tooltip
+
+# 插件标准日志初始化
+logger = mw.addonManager.get_logger(__name__)
+
+def setup_addon_logging():
+    """正确的插件日志设置"""
+    # Anki 会自动处理：
+    # 1. 日志文件轮转
+    # 2. 调试控制台集成  
+    # 3. 线程安全的日志写入
+    # 4. 适当的日志级别管理
+    
+    logger.info("插件初始化完成")
+    logger.debug("调试信息")
+    logger.warning("警告信息")
+    logger.error("错误信息")
+```
+
+#### 用户交互消息
+
+```python
+# 使用 Anki 的标准消息函数而不是自定义日志窗口
+from aqt.utils import showInfo, showWarning, showCritical, tooltip
+
+def user_feedback_examples():
+    """标准用户反馈模式"""
+    
+    # 成功操作
+    showInfo("✅ 操作成功完成")
+    tooltip("快速状态提示", 2000)  # 2秒后自动消失
+    
+    # 警告信息
+    showWarning("⚠️ 操作可能影响现有数据")
+    
+    # 错误信息
+    showCritical("❌ 严重错误，请检查输入")
+    
+    # 调试信息（仅开发时可见）
+    logger.debug(f"处理了 {count} 个项目")
+```
+
+#### 插件状态显示
+
+```python
+def setup_status_display():
+    """使用简单的状态显示而不是复杂的日志窗口"""
+    
+    # 方法1：简单文本显示
+    status_label = QLabel("使用Anki 25.06+标准日志系统\n可通过 工具→调试控制台 查看详细日志")
+    status_label.setReadOnly(True)
+    
+    # 方法2：进度条 + 状态更新
+    progress_bar = QProgressBar()
+    progress_bar.setRange(0, 100)
+    
+    def update_progress(value: int, message: str):
+        progress_bar.setValue(value)
+        tooltip(message, 1000)
+        logger.info(f"进度: {value}% - {message}")
+```
+
+### ❌ 避免的日志模式
+
+**自定义 Qt 日志处理器会导致段错误**：
+
+```python
+# ❌ 危险模式：自定义 Qt 信号连接
+class CustomLogHandler(QObject):  # 会导致崩溃
+    log_signal = pyqtSignal(str)
+    
+    def emit(self, record):
+        self.log_signal.emit(record.getMessage())
+
+# ❌ 避免：手动线程 + Qt 信号
+class ThreadedLogger:  # 会导致段错误
+    def __init__(self):
+        self.emitter = LogEventEmitter()
+        self.emitter.newRecord.connect(self.on_log)  # 崩溃源头
+```
+
+**问题原因**：
+- Qt 对象在析构时，Python 回调可能已失效
+- 跨线程 Qt 信号连接在插件卸载时容易崩溃
+- 手动管理 Qt 对象生命周期复杂且易错
+
+### ✅ 推荐的错误处理和日志模式
+
+```python
+def safe_operation_with_logging():
+    """安全的操作 + 日志模式"""
+    
+    def operation_task() -> dict:
+        try:
+            # 执行操作
+            logger.info("开始执行操作")
+            result = perform_complex_operation()
+            logger.info(f"操作成功，结果：{len(result)} 项")
+            return result
+            
+        except Exception as e:
+            logger.exception("操作失败", exc_info=True)
+            raise
+    
+    def on_success(result: dict):
+        logger.info("操作完成回调")
+        showInfo(f"✅ 成功处理 {len(result)} 项")
+    
+    def on_failure(exc: Exception):
+        logger.error(f"操作失败：{exc}")
+        showWarning(f"❌ 操作失败：{str(exc)}")
+    
+    # 使用 Anki 的异步操作系统
+    mw.taskman.with_progress(
+        task=operation_task,
+        on_done=lambda fut: (
+            on_success(fut.result()) if not fut.exception() 
+            else on_failure(fut.exception())
+        ),
+        label="正在处理...",
+        uses_collection=False
+    )
+```
+
+### 日志最佳实践总结
+
+1. **使用 Anki 标准日志**：`mw.addonManager.get_logger(__name__)`
+2. **避免自定义 Qt 日志窗口**：使用 Anki 调试控制台
+3. **分离日志和用户交互**：`logger.*()` 用于调试，`showInfo()` 用于用户反馈
+4. **安全的异常处理**：使用 `logger.exception()` 记录详细错误信息
+5. **简单的状态显示**：避免复杂的实时日志窗口，使用简单文本或进度条
+
+### 调试控制台使用
+
+用户可以通过以下方式查看插件日志：
+- **菜单路径**：工具 → 调试控制台
+- **快捷键**：Ctrl+Shift+; (Windows/Linux) 或 Cmd+Shift+; (macOS)
+- **日志文件**：Anki 自动管理日志文件轮转和存储
+
+---
+
 ## 🔧 Package 第三方依赖
 
 Addon 中应该优先使用 Anki/aqt 中封装好的功能和接口，如果无法实现预期的效果，可以根据需求选择第三方依赖。
 
-### 可用内置包（25.06b7）
-插件可以使用这些保证在Anki 25.06b7中可用的包：
+### 可用内置包
+
+在必须使用第三方插件的场景下，插件可以使用这些保证在Anki 25.06b7中可用的包：
 
 #### Web/HTTP操作
+
 ```python
 import httpx          # v0.28.1 - 现代异步HTTP客户端
 import requests[socks]  # v2.32.4 - 传统HTTP客户端
@@ -1173,4 +1463,21 @@ migration_rules = {
     "for.*note.flush()": "使用CollectionOp+add_custom_undo_entry",
     "网络请求.*col.update_note": "分离网络请求和数据库操作"
 }
+```
+
+## 隐藏测试应用提示框
+
+在启动 Anki 测试应用时，会自动弹出提示框，可以在依赖库的 `aqt/main.py` 中的 1346 行注释掉 `showInfo` 相关代码。
+
+```python
+    def handleImport(self, path: str) -> None:
+        "Importing triggered via file double-click, or dragging file onto Anki icon."
+        import aqt.importing
+
+        if not os.path.exists(path):
+            # there were instances in the distant past where the received filename was not
+            # valid (encoding issues?), so this was added to direct users to try
+            # file>import instead.
+            # showInfo(f"{tr.qt_misc_please_use_fileimport_to_import_this()} ({path})")
+            return NoneType
 ```

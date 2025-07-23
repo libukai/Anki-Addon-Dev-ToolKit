@@ -445,7 +445,7 @@ This project is licensed under the GNU AGPLv3 License. See the [LICENSE](LICENSE
 - **Python 3.13** 与 Anki 2025.06+ 保持一致
 - **Qt6 专用支持** 适配 Anki 2025.06+ 版本  
 - **优雅依赖管理** 完全基于 uv 管理环境和依赖
-- **代码质量工具** 集成 ruff 和 mypy 提升代码质量
+- **代码质量工具** 集成 ruff 和 ty 提升代码质量
 - **全面的 CLI 命令** 覆盖从初始化到发布的全流程
 - **便捷构建和分发** 支持 AnkiWeb 和本地分发
 
@@ -520,7 +520,7 @@ aadt claude
 
 这个命令会根据你的项目配置，在根目录下生成一个 CLAUDE.md 文件，其中包括了 Anki 25.06+ Addon 开发的核心指引，能帮助 Claude AI 更好地理解你的项目并提供精准的开发建议。
 
-此外，根目录下还有一个 ANKI.md 文件，其中包含现代 Anki 25.06+ 的源代码详细分析和最佳实践的详细文档，帮助人类程序员更好地理解 Anki 的整体架构和开发方式。
+此外，还会在根目录下生成一个 ANKI.md 文件，其中包含现代 Anki 25.06+ 的源代码详细分析和最佳实践的详细文档，帮助 AI 和人类程序员更好地理解 Anki 的整体架构和开发方式。
 
 ### 3. 测试
 
@@ -532,7 +532,7 @@ aadt test
 
 运行 `test` 命令会先将 `src/` 目录下的项目文件夹软链接到 Anki 的插件目录，然后自动启动 Anki 并加载插件。
 
-同时，AADT 还提供了 `link` 命令，用于管理项目源代码文件夹软链接到 Anki 插件目录的操作。
+同时，AADT 还提供了 `link` 命令，用于手动管理项目源代码文件夹软链接到 Anki 插件目录的操作。
 
 ```bash
 # 创建软链接
@@ -582,7 +582,7 @@ aadt ui
 
 **功能：**
 - 编译 `ui/designer/` 中的 `.ui` 文件到 `src/模块名/gui/forms/qt6/`
-- 自动复制 `ui/resources/` 中的资源文件到 `src/模块名/resources/`
+- 自动复制 `ui/resources/` 中的资源文件到 `src/模块名/gui/resources/`
 - 支持图标、样式表等各种资源文件
 
 ### `test` - 启动测试
