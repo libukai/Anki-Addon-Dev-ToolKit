@@ -13,7 +13,7 @@ English | [中文](#中文版)
 - **Python 3.13** Compatible with Anki 2025.06+
 - **Qt6 Exclusive Support** Adapted for Anki 2025.06+ versions
 - **Elegant Dependency Management** Fully based on uv for environment and dependency management
-- **Code Quality Tools** Integrated ruff and mypy for code quality enhancement
+- **Code Quality Tools** Integrated ruff and ty for code quality enhancement
 - **Comprehensive CLI Commands** Covering the entire workflow from initialization to release
 - **Convenient Build and Distribution** Support for AnkiWeb and local distribution
 
@@ -150,7 +150,8 @@ aadt ui
 
 **Features:**
 - Compile `.ui` files from `ui/designer/` to `src/module_name/gui/forms/qt6/`
-- Automatically copy resource files from `ui/resources/` to `src/module_name/resources/`
+- Automatically copy resource files from `ui/resources/` to `src/module_name/gui/resources/`
+- Auto-generate `__init__.py` for resources package to support importlib.resources
 - Support for icons, stylesheets, and various resource files
 
 ### `test` - Launch Testing
@@ -295,7 +296,8 @@ my-addon/
 ├── src/my_addon/
 │   ├── gui/forms/qt6/
 │   │   └── dialog.py          # Compiled UI, using aqt.qt imports
-│   └── resources/
+│   └── gui/resources/
+│       ├── __init__.py        # Auto-generated, supports importlib.resources
 │       └── icon.png           # Automatically copied resource
 ```
 
@@ -339,7 +341,7 @@ AADT analyzes your UI files and provides **precise type annotations** based on a
 ### **Main Advantages:**
 - ✅ **Anki Compatible Imports**: Use `from aqt.qt import ...` instead of `from PyQt6 import ...`
 - ✅ **Intelligent Type Inference**: Automatically determine correct Qt widget types
-- ✅ **mypy Compatible**: Generated code passes strict type checking
+- ✅ **Type Safe**: Generated code passes strict type checking
 - ✅ **Minimized Imports**: Only import classes actually used in UI files
 - ✅ **Automatic Resource Copying**: Resource files automatically copied to final package
 - ✅ **Clean References**: No need for complex QRC compilation
@@ -352,22 +354,15 @@ AADT includes modern development tools, strongly recommended for use during deve
 
 ```bash
 # Use ruff for code checking
-ruff check aadt/
-ruff format aadt/
+uv run ruff check src/aadt/
+uv run ruff format src/aadt/
 
-# Use mypy for type checking
-mypy aadt/
-
-# Use ty for fast type checking (recommended for development)
-./scripts/ty-check.sh
-# or manually:
-uv run ty check src/ --extra-search-path src/
+# Use ty for type checking  
+uv run ty check src/aadt/
 
 # Run all checks
-ruff check aadt/ && mypy aadt/
+uv run ruff check src/aadt/ && uv run ty check src/aadt/
 ```
-
-**Note**: ty is a fast type checker that works well with src-layout projects. Use the provided script for convenience.
 
 ## Unit Testing
 
@@ -417,7 +412,7 @@ Check the `tests/` directory for example configurations and usage patterns.
 AADT follows these principles:
 
 1. **Modern Python First**: Use latest language features (3.12+)
-2. **Type Safety**: Complete type annotations and mypy validation
+2. **Type Safety**: Complete type annotations and type checking validation
 3. **Qt6 Focus**: No legacy Qt5 baggage, designed for current Anki
 4. **Fast Build**: uv-based dependency management
 5. **Developer Experience**: Clear CLI, good error messages, useful validation
@@ -582,7 +577,7 @@ aadt ui
 
 **功能：**
 - 编译 `ui/designer/` 中的 `.ui` 文件到 `src/模块名/gui/forms/qt6/`
-- 自动复制 `ui/resources/` 中的资源文件到 `src/模块名/gui/resources/`
+- 复制 `ui/resources/` 中的资源文件到 `src/模块名/gui/resources/`，并进行路径初始化
 - 支持图标、样式表等各种资源文件
 
 ### `test` - 启动测试
@@ -727,13 +722,14 @@ my-addon/
 ├── src/my_addon/
 │   ├── gui/forms/qt6/
 │   │   └── dialog.py          # 编译后的UI，使用aqt.qt导入
-│   └── resources/
+│   └── gui/resources/
+│       ├── __init__.py        # 自动生成，支持importlib.resources
 │       └── icon.png           # 自动复制的资源
 ```
 
 ### 🧠 智能 PyQt6 到 aqt.qt 转换
 
-在转化的过程中，AADT 自动将 pyuic6 输出转换为 Anki 兼容格式，并提供精确的类型注解：
+在转化的过程中，AADT 使用 pyuic6 将 ui 文件输出转换为 Anki 兼容格式，并提供精确的类型注解：
 
 **原始转化 (pyuic6 输出):**
 ```python
@@ -784,14 +780,14 @@ AADT 包含现代开发工具，强烈建议在开发过程中使用，提升代
 
 ```bash
 # 使用ruff进行代码检查
-ruff check aadt/
-ruff format aadt/
+uv run ruff check src/aadt/
+uv run ruff format src/aadt/
 
-# 使用mypy进行类型检查  
-mypy aadt/
+# 使用ty进行类型检查  
+uv run ty check src/aadt/
 
 # 运行所有检查
-ruff check aadt/ && mypy aadt/
+uv run ruff check src/aadt/ && uv run ty check src/aadt/
 ```
 
 ## 单元测试
@@ -821,6 +817,9 @@ AADT 设计为在 Git 仓库中工作最佳，但**不需要 Git**：
 ### 使用示例
 
 ```bash
+# 自动检测环境并构建
+aadt build
+
 # 在 Git 仓库中（自动检测）
 aadt build -d local
 
@@ -845,4 +844,4 @@ aadt build v1.2.0 -d local
 
 **为Anki社区用❤️构建**
 
-> 本项目受 [aab](https://github.com/glutanimate/anki-addon-builder) 项目启发，专注于为即将正式上线的新版 Anki 插件开发者提供最佳的开发体验。
+> 本项目受 [aab](https://github.com/glutanimate/anki-addon-builder) 项目启发，专注于为即将正式上线的新版  Anki 插件开发者提供最佳的开发体验。

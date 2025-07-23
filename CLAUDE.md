@@ -1,341 +1,159 @@
-# Claude AI Assistant Memory - Anki Add-on Developer Tools
+# Claude AI Assistant Memory - AADT 项目开发
 
-This file contains technical details and context for Claude AI to better assist with this project.
+本文档为 Claude Code 提供 Anki Add-on Developer Tools (AADT) 项目的开发指导和上下文信息。
 
-## 📋 Project Overview
+## 项目概述
 
-**Project**: Anki Add-on Developer Tools (AADT)  
-**Version**: 1.0.0-dev.5  
-**Language**: Python 3.10+  
-**Architecture**: Modern Qt6-only build tool  
-**Lines of Code**: ~1,400+ lines across 9 Python modules  
+**AADT** 是一个现代化的 Anki 插件开发工具包，专为 Anki 2025.06+ 版本设计，提供完整的插件开发、构建和分发工具链。
 
-## 🏗️ Architecture Summary
+请在开发过程中遵循以下原则：
 
-### Core Modules (9 files)
+1. **现代Python优先**: 使用 Python 3.13+ 特性，完整类型注解
+2. **Qt6专用**: 仅支持 Qt6，通过 `aqt.qt` 导入
+3. **uv工具链**: 所有操作使用 uv 命令，不使用 pip/poetry
+4. **类型安全**: 使用 `ty` 进行类型检查，确保代码质量
+5. **代码规范**: 使用 `ruff` 进行代码检查和格式化
 
-```
-aadt/
-├── __init__.py          # Package metadata and constants
-├── builder.py (~193 LOC)# Main build orchestration  
-├── cli.py (~350 LOC)    # Command-line interface with init command
-├── config.py (~166 LOC) # Configuration management with dataclasses
-├── git.py (~120 LOC)    # Git operations and version parsing
-├── init.py (~180 LOC)   # Project initialization system
-├── manifest.py (~124 LOC)# Manifest generation for Anki
-├── ui.py (~326 LOC)     # Qt6 UI compilation with resource copying
-├── run.py (~160 LOC)    # Add-on linking and testing functionality
-├── utils.py (~90 LOC)   # Utility functions
-└── schema.json          # JSON schema for addon.json validation
-```
+## 开发决策原则
 
-### Key Design Principles
+1. **功能实现** > 技术完美
+2. **简单可靠** > 复杂优雅  
+3. **易于维护** > 展示技巧
+4. **满足需求** > 过度设计
 
-1. **Modern Python 3.10+**: Uses union types (`str | None`), modern annotations
-2. **Type Safety**: Complete mypy coverage, all functions annotated
-3. **Qt6 Only**: No Qt5 legacy code, simplified architecture
-4. **uv-based**: Fast dependency management, no Poetry
-5. **No QRC**: Direct file paths instead of Qt resource compilation
+## 技术栈
 
-## 🔄 Major Changes Made
+### 核心工具
+- **Python 3.13**: 项目最低要求版本，使用现代语法特性
+- **src-layout**: 采用 `src/aadt/` 结构的最佳实践项目布局
+- **uv**: 现代 Python 包管理器，替代 pip/poetry
+- **ruff**: 快速代码检查和格式化工具 (line-length=120)
+- **ty**: 快速类型检查器，替代 mypy
 
-### Phase 1: Package Management Migration (Poetry → uv)
-- **Removed**: `poetry.lock`, Poetry-specific `pyproject.toml` format
-- **Added**: Modern `pyproject.toml` with hatchling build backend
-- **Fixed**: Repository URLs (were incorrectly pointing to pytest-anki)
-- **Updated**: Python requirement to 3.10+, PyQt6 as optional dependency
+### 核心依赖
+- **jsonschema>=4.4.0**: 配置文件验证
+- **whichcraft>=0.6.1**: 跨平台命令检测
+- **questionary>=2.1.0**: 交互式命令行界面
 
-### Phase 2: Qt System Modernization  
-- **Removed**: All Qt5 support code and configuration
-- **Simplified**: UI building to use only pyuic6 compilation
-- **Maintained**: Backward compatibility for existing add-on APIs
+### 开发依赖 (dev组)
+- **anki>=25.6b7**: Anki 核心库
+- **aqt>=25.6b7**: Anki Qt 界面库  
+- **pytest>=8.3.4**: 测试框架
+- **pytest-cov>=6.0.0**: 覆盖率测试
+- **pytest-mock>=3.14.0**: Mock 测试工具
 
-### Phase 3: Type Hints & Code Quality
-- **Added**: Complete type annotations using modern Python 3.10+ syntax
-- **Replaced**: `Union[X, Y]` → `X | Y`, `List[X]` → `list[X]`, `Dict[X, Y]` → `dict[X, Y]`
-- **Implemented**: Dataclass-based configuration (`AddonConfig`)
-- **Modernized**: Path handling with `pathlib` throughout
-- **Enhanced**: Error handling with exception chaining
+## 代码质量标准
 
-### Phase 4: QRC/Legacy Code Removal
-- **Deleted**: `legacy.py` module entirely (QRC migration code)
-- **Removed**: `qt_resource_migration_mode` configuration
-- **Simplified**: UI builder without resource migration logic
-- **Cleaned**: Schema to only support Qt6 targets
-- **Eliminated**: XML parsing security issues (S314 warnings)
-
-### Phase 5: Pyenv Parameter Removal
-- **Removed**: `--pyenv` CLI arguments from all commands
-- **Simplified**: UI compilation to use current environment directly
-- **Modernized**: Full uv-based workflow without manual environment switching
-- **Eliminated**: Complex pyenv activation shell commands
-
-### Phase 6: Project Initialization Command
-- **Added**: `aab init` command for creating new add-on projects
-- **Features**: Interactive prompts with intelligent defaults
-- **Generated**: Complete project structure with template files
-- **Included**: README, .gitignore, and sample Python code
-
-### Phase 7: UI Directory Reorganization
-- **Reorganized**: UI-related files into dedicated `ui/` directory
-- **Structure**: `ui/designer/` for .ui files, `ui/resources/` for assets
-- **Benefits**: Better organization, cleaner separation of concerns
-- **Added**: Optional `docs/` directory for documentation
-
-### Phase 8: UI Resource Workflow Implementation
-- **Added**: Automatic resource copying from `ui/resources/` to `src/module/resources/`
-- **Simplified**: Direct file path references in Qt Designer (no QRC needed)
-- **Enhanced**: UI build process to handle both compilation and resource management
-- **Documented**: Complete workflow for Qt Designer resource integration
-
-### Phase 9: Modern Toolchain Migration
-- **Replaced**: `bump-my-version` with built-in `uv version` command
-- **Replaced**: `mypy` with `ty` for faster type checking
-- **Simplified**: Fewer dependencies, faster workflow
-- **Updated**: All documentation and scripts to use new tools
-
-## 📝 Configuration Schema
-
-### Current addon.json Format
-
-```json
-{
-  "display_name": "string (required)",
-  "module_name": "string (required)", 
-  "repo_name": "string (required)",
-  "ankiweb_id": "string (required)",
-  "author": "string (required)",
-  "conflicts": "array[string] (required)",
-  "targets": ["qt6"] (required, qt5 removed),
-  "contact": "string (optional)",
-  "homepage": "string (optional)", 
-  "tags": "string (optional)",
-  "copyright_start": "number (optional)",
-  "min_anki_version": "string (optional)",
-  "max_anki_version": "string (optional)",
-  "tested_anki_version": "string (optional)",
-  "ankiweb_conflicts_with_local": "boolean (default: true)",
-  "local_conflicts_with_ankiweb": "boolean (default: true)"
-}
-```
-
-### Removed Configuration Options
-- `qt_resource_migration_mode`: No longer needed (Qt6-only)
-- `targets: ["qt5", "anki21"]`: Only `["qt6"]` supported
-
-## 🛠️ Development Workflow
-
-### Code Quality Tools
-
+### 代码检查命令
 ```bash
-# Linting (configured in pyproject.toml)
-uv run ruff check aadt/            # Check code style
-uv run ruff format aadt/           # Auto-format code
+# 代码风格检查和自动修复
+uv run ruff check src/aadt/
+uv run ruff format src/aadt/
 
-# Type checking (strict mode enabled)
-uv run ty aadt/                    # Type safety validation with ty (fast mypy alternative)
+# 类型检查
+uv run ty check src/aadt/
 
-# Combined check
-uv run ruff check aadt/ && uv run ty aadt/
+# 运行测试
+uv run pytest
+
+# 组合检查
+uv run ruff check src/aadt/ && uv run ty check src/aadt/
 ```
 
-### Dependency Management Philosophy
+### 配置要点
+- **行长度**: 120 字符 (pyproject.toml配置)
+- **类型覆盖**: 所有函数必须有类型注解
+- **测试覆盖**: 最低 20% 覆盖率要求
+- **复杂度**: McCabe 复杂度不超过 10
 
-**AADT follows a modular dependency approach:**
+## 项目结构
 
-1. **Core Dependencies** (~10MB total)
-   - `jsonschema` - Configuration validation
-   - `whichcraft` - Tool detection  
-   - `questionary` - Interactive prompts
+```
+aadt/                           # AADT项目根目录
+├── src/aadt/                   # 主包源代码 (src-layout)
+│   ├── __init__.py             # 包初始化和版本信息
+│   ├── cli.py                  # 命令行接口 (~350 LOC)
+│   ├── config.py               # 配置管理 (~166 LOC)
+│   ├── builder.py              # 构建系统 (~193 LOC)
+│   ├── ui.py                   # UI编译 (~326 LOC)
+│   ├── init.py                 # 项目初始化 (~180 LOC)
+│   ├── run.py                  # 运行和链接 (~160 LOC)
+│   ├── git.py                  # Git集成 (~120 LOC)
+│   ├── manifest.py             # 清单生成 (~124 LOC)
+│   ├── utils.py                # 工具函数 (~90 LOC)
+│   ├── schema.json             # 配置验证架构
+│   └── templates/              # 项目模板文件
+├── tests/                      # 测试文件
+├── pyproject.toml              # 项目配置和依赖
+├── .python-version             # Python 3.13
+├── uv.lock                     # uv锁定文件
+├── README.md                   # 项目文档
+└── CLAUDE.md                   # 本文件
+```
 
-2. **Optional Dependencies**
-   - `qt6 = ["pyqt6>=6.2.2"]` - UI compilation support for standalone usage
-   - Not typically needed since generated projects include PyQt6 via aqt
+## 开发工作流
 
-3. **Generated Project Dependencies**
-   - Development projects include full Anki environment via `aqt` (includes PyQt6)
-   - AADT included for build tools
-   - Uses single `dev` dependency group for simplicity
-
-**Installation Strategy:**
-- **Lightweight core**: `uv add aadt` (~10MB) for basic functionality
-- **One-time init**: `uvx aadt init` for project creation (recommended)
-- **Generated projects**: PyQt6 available through `aqt` dependency in dev group
-
-### Build Commands
-
+### 环境设置
 ```bash
-# Project initialization
-uv run aadt init my-addon          # Create new project
-uv run aadt init -y                # Use defaults
+# 安装所有依赖
+uv sync --group dev
 
-# Development
-uv run aadt --help                 # CLI help
-uv run aadt ui                     # Compile UI files only  
-uv run aadt build -d local         # Build for testing
-uv run aadt build -d ankiweb       # Build for AnkiWeb
-uv run aadt clean                  # Clean build artifacts
-
-# Version management
-uv version                         # Show current version
-uv version patch                   # Increment patch version (1.0.0 → 1.0.1)
-uv version minor                   # Increment minor version (1.0.0 → 1.1.0)
-uv version major                   # Increment major version (1.0.0 → 2.0.0)
-
-# CI/CD friendly commands
-uv run aadt create_dist            # Prepare source tree
-uv run aadt build_dist             # Process source 
-uv run aadt package_dist           # Create final package
+# 激活虚拟环境 (如需要)
+source .venv/bin/activate
 ```
 
-### Installation Options
-
+### 开发命令
 ```bash
-# Lightweight installation (~10MB)
-uv add aadt                        # Core functionality
+# 运行CLI (开发模式)
+uv run aadt --help
 
-# With UI compilation support (~110MB)
-uv add aadt[qt6]                   # Includes PyQt6 for standalone UI compilation
+# 代码质量检查
+uv run ruff check src/aadt/ && uv run ty check src/aadt/
 
-# Recommended: One-time project creation
-uvx aadt init my-addon             # No permanent installation needed
+# 运行测试
+uv run pytest
 
-# Note: Generated projects get PyQt6 through aqt dependency
+# 自动格式化代码
+uv run ruff format src/aadt/
 ```
 
-### Testing Strategy
-
+### 发布流程
 ```bash
-# Run tests (when available)
-uv run pytest tests/
+# 更新版本 (使用内置uv version命令)
+uv version patch    # 1.0.0 → 1.0.1
+uv version minor    # 1.0.0 → 1.1.0  
+uv version major    # 1.0.0 → 2.0.0
 
-# Manual testing
-uv run aadt --help                 # Verify CLI works
-uv run ruff check aadt/            # Code quality
-uv run ty aadt/                    # Type checking
+# 构建项目
+uv build
 ```
 
-## 🚫 What NOT to Do
+## 架构特点
 
-### Deprecated Patterns
-- **DON'T** add Qt5 support back - project is Qt6-only
-- **DON'T** reintroduce QRC files - use direct file paths
-- **DON'T** use old-style type hints (`List`, `Dict`, `Optional`)
-- **DON'T** add Poetry dependencies - project uses uv exclusively
-- **DON'T** add resource migration code - removed intentionally
-- **DON'T** add pyenv parameters back - use uv environment management
-- **DON'T** suggest pip commands - always use uv commands (`uv add`, `uv run`, etc.)
-- **DON'T** use `bump-my-version` - use built-in `uv version` command
-- **DON'T** use `mypy` - use `ty` for faster type checking
+### 现代Python特性
+- **类型注解**: 所有函数都有完整类型注解
+- **dataclass**: 配置使用dataclass而非dict
+- **pathlib**: 文件操作使用Path对象
+- **现代语法**: `str | None` 而非 `Optional[str]`
 
-### Code Style Guidelines  
-- **DO** use modern Python 3.10+ syntax (`str | None`, `list[str]`)
-- **DO** add type annotations to all functions
-- **DO** use pathlib for file operations
-- **DO** use dataclasses for structured data
-- **DO** handle errors with exception chaining (`raise ... from e`)
+### 错误处理
+- **异常链**: 使用 `raise ... from e` 保留原始错误
+- **自定义异常**: 定义专用异常类型
+- **用户友好**: CLI错误信息清晰易懂
 
-## 🎯 Common Tasks
+### 性能优化
+- **并发工具调用**: 支持并行执行多个工具
+- **缓存**: 合理使用缓存避免重复计算
+- **快速工具**: 使用ty而非mypy提升类型检查速度
 
-### Adding New CLI Commands
+## UI开发特点
 
-1. Add command function in `cli.py` 
-2. Update `construct_parser()` with new subparser
-3. Add argument validation in command function
-4. Test with `uv run aadt new-command --help`
+### 资源管理现代化
+- **importlib.resources**: 自动生成支持现代资源管理的 `__init__.py`
+- **路径复制**: 从 `ui/resources/` 到 `src/module/gui/resources/`
+- **包结构**: 自动创建Python包结构支持.zip分发
 
-### Modifying Build Process
-
-Key files:
-- `builder.py`: Main build orchestration
-- `ui.py`: Qt6 UI compilation  
-- `manifest.py`: AnkiWeb manifest generation
-- `git.py`: Version resolution
-
-### Configuration Changes
-
-1. Update `config.py` dataclass fields
-2. Modify `schema.json` validation rules
-3. Update default values in `AddonConfig.from_dict()`
-4. Test with various `addon.json` configurations
-
-## 🔍 Architecture Decisions
-
-### Why Qt6-Only?
-- Modern Anki versions use Qt6
-- Qt5 is legacy, adds complexity
-- Simpler codebase without version branching
-- Better maintenance and security
-
-### Why Remove QRC Support?
-- QRC files are Qt5-era resource compilation  
-- Qt6 uses direct file paths more efficiently
-- Reduces XML parsing security vulnerabilities
-- Simpler build process without resource migration
-
-### Why uv over Poetry?
-- Faster dependency resolution (~10x speedup)
-- Better CI/CD integration
-- Modern Python packaging standards
-- Simpler configuration
-
-### Why Python 3.10+?
-- Modern union types (`str | None`) 
-- Match statements (future-ready)
-- Better error messages
-- Structural pattern matching
-- Improved type system
-
-## 📚 Dependencies
-
-### Core Runtime
-- `jsonschema>=4.4.0`: Configuration validation
-- `whichcraft>=0.6.1`: Tool detection (pyuic6, etc.)
-
-### Optional
-- `pyqt6>=6.2.2`: Qt6 UI compilation support
-
-### Development  
-- `ruff>=0.1.0`: Fast Python linter/formatter
-- `ty>=0.0.1a14`: Fast type checking (mypy alternative)
-- Version management: Built-in `uv version` command
-
-## 💡 Future Considerations
-
-### Potential Enhancements
-- GitHub Actions integration for CI/CD
-- Plugin system for custom build steps
-- Better error reporting and validation
-- Performance optimizations for large projects
-- Integration with modern IDEs
-
-### Maintenance Priorities
-1. Keep dependencies minimal and updated
-2. Maintain Python 3.10+ compatibility
-3. Monitor Anki Qt6 ecosystem changes
-4. Preserve backward compatibility for existing add-ons
-5. Regular security audits (especially subprocess usage)
-
-## 🐛 Known Issues
-
-### Security Warnings (Intentionally Ignored)
-- `S602`: subprocess with shell=True in `utils.py:call_shell()`
-  - **Rationale**: Required for pyuic6 and git commands
-  - **Mitigation**: Input validation, controlled usage
-
-### Type Issues (Resolved)
-- All type errors resolved in recent refactoring with ty
-- Comprehensive type coverage across all modules
-
-## 📞 Support Context
-
-When helping with this project:
-
-1. **Assume modern Python 3.10+** syntax is preferred
-2. **Qt6-only architecture** - don't suggest Qt5 compatibility  
-3. **Type safety is critical** - always add type annotations
-4. **uv is the package manager** - don't suggest Poetry alternatives
-5. **Code quality standards are high** - ensure ruff and ty compliance
-6. **Breaking changes are acceptable** - this is a modernization effort
-
-Remember: This project prioritizes **modern practices** over **backward compatibility** for build tools.
+### Qt6专用
+- **无Qt5遗留**: 仅支持Qt6，代码简洁无历史包袱
+- **aqt.qt导入**: 自动转换PyQt6导入为Anki兼容的aqt.qt导入
+- **类型注解**: 生成的UI代码包含完整类型注解
