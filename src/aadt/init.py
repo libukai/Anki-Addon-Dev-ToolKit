@@ -44,13 +44,16 @@ class ProjectInitializer:
         # Create target directory if it doesn't exist
         self._ensure_target_directory()
 
+        existing_config = None
         if self.config_path.exists():
-            raise ProjectInitializationError(
-                f"addon.json already exists in {self.target_dir}. "
-                "This directory appears to already contain an add-on project."
-            )
+            # Load existing configuration
+            existing_config = self._load_existing_config()
+            print("📋 Found existing addon.json. Will preserve existing configuration.")
 
-        config_data = self._collect_project_info() if interactive else self._get_default_config()
+        if interactive:
+            config_data = self._collect_project_info(existing_config)
+        else:
+            config_data = self._get_default_config(existing_config)
 
         # Create and validate configuration
         try:
@@ -83,82 +86,166 @@ class ProjectInitializer:
         print("\n💡 Tip: Use 'uv run aadt <command>' for local development")
         print("💡 Dependencies are organized in a single dev group")
 
-    def _collect_project_info(self) -> dict[str, Any]:
+    def _load_existing_config(self) -> dict[str, Any]:
+        """Load existing addon.json configuration."""
+        try:
+            with self.config_path.open("r", encoding="utf-8") as f:
+                return json.load(f)
+        except (json.JSONDecodeError, OSError) as e:
+            raise ProjectInitializationError(f"Failed to load existing addon.json: {e}") from e
+
+    def _collect_project_info(self, existing_config: dict[str, Any] | None = None) -> dict[str, Any]:
         """Collect project information through interactive prompts."""
-        print("🚀 Initializing new Anki add-on project...\n")
+        if existing_config:
+            print("🔄 Updating existing Anki add-on project...\n")
+        else:
+            print("🚀 Initializing new Anki add-on project...\n")
 
         # Get basic project info
+        basic_answers = self._collect_basic_info(existing_config)
+        display_name = basic_answers["display_name"]
+        
+        # Get module and repo names
+        name_answers = self._collect_name_info(existing_config, display_name)
+        basic_answers.update(name_answers)
+        
+        # Get description
+        description = self._collect_description(existing_config)
+        
+        # Get optional fields
+        optional_answers = self._collect_optional_info(existing_config)
+        
+        # Build final configuration
+        return self._build_config_data(basic_answers, description, optional_answers, existing_config)
+
+    def _collect_basic_info(self, existing_config: dict[str, Any] | None) -> dict[str, Any]:
+        """Collect basic project information."""
+        display_name_default = self._get_config_value(existing_config, "display_name", self._suggest_display_name())
+        author_default = self._get_config_value(existing_config, "author", "")
+        
         answers = questionary.form(
-            display_name=questionary.text("Display name (shown to users):", default=self._suggest_display_name()),
-            author=questionary.text("Author name (the coder maybe AI):"),
+            display_name=questionary.text(
+                "Display name (shown to users):", 
+                default=display_name_default
+            ),
+            author=questionary.text(
+                "Author name (the coder maybe AI):",
+                default=author_default
+            ),
         ).ask()
 
         if not answers:
             raise ProjectInitializationError("Initialization cancelled.")
+        return answers
 
-        display_name = answers["display_name"]
-
-        more_answers = questionary.form(
+    def _collect_name_info(self, existing_config: dict[str, Any] | None, display_name: str) -> dict[str, Any]:
+        """Collect module and repository name information."""
+        module_name_default = self._get_config_value(
+            existing_config, "module_name", self._suggest_module_name(display_name)
+        )
+        repo_name_default = self._get_config_value(
+            existing_config, "repo_name", self._suggest_repo_name(display_name)
+        )
+        
+        answers = questionary.form(
             module_name=questionary.text(
                 "Module name (Python package name):",
-                default=self._suggest_module_name(display_name),
+                default=module_name_default,
                 validate=lambda text: re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", text) is not None,
             ),
             repo_name=questionary.text(
                 "Repository name (for files/GitHub):",
-                default=self._suggest_repo_name(display_name),
+                default=repo_name_default,
             ),
         ).ask()
 
-        if not more_answers:
+        if not answers:
             raise ProjectInitializationError("Initialization cancelled.")
+        return answers
 
-        answers.update(more_answers)
-
-        # Description (important for modern manifests)
-        description_answer = questionary.text(
+    def _collect_description(self, existing_config: dict[str, Any] | None) -> str:
+        """Collect project description."""
+        default_desc = "An Anki add-on that enhances your flashcard experience."
+        description_default = self._get_config_value(existing_config, "description", default_desc)
+        
+        description = questionary.text(
             "Description (brief description of your add-on):",
-            default="An Anki add-on that enhances your flashcard experience.",
+            default=description_default,
         ).ask()
 
-        if not description_answer:
+        if not description:
             raise ProjectInitializationError("Initialization cancelled.")
+        return description
 
-        # Optional fields
-        optional_answers = questionary.form(
-            ankiweb_id=questionary.text("AnkiWeb ID (optional, for existing add-ons):"),
-            contact=questionary.text("Contact email (optional):"),
-            homepage=questionary.text("Homepage URL (optional):"),
-            tags=questionary.text("Tags (space-separated, optional):"),
-            min_anki_version=questionary.text("Minimum Anki version (optional, e.g., '24.04'):"),
+    def _collect_optional_info(self, existing_config: dict[str, Any] | None) -> dict[str, Any]:
+        """Collect optional project information."""
+        answers = questionary.form(
+            ankiweb_id=questionary.text(
+                "AnkiWeb ID (optional, for existing add-ons):",
+                default=self._get_config_value(existing_config, "ankiweb_id", "")
+            ),
+            contact=questionary.text(
+                "Contact email (optional):",
+                default=self._get_config_value(existing_config, "contact", "")
+            ),
+            homepage=questionary.text(
+                "Homepage URL (optional):",
+                default=self._get_config_value(existing_config, "homepage", "")
+            ),
+            tags=questionary.text(
+                "Tags (space-separated, optional):",
+                default=self._format_tags_for_display(existing_config.get("tags") if existing_config else None)
+            ),
+            min_anki_version=questionary.text(
+                "Minimum Anki version (optional, e.g., '24.04'):",
+                default=self._get_config_value(existing_config, "min_anki_version", "")
+            ),
         ).ask()
 
-        if not optional_answers:
+        if not answers:
             raise ProjectInitializationError("Initialization cancelled.")
+        return answers
 
-        # Build configuration
+    def _build_config_data(self, basic_answers: dict[str, Any], description: str, 
+                          optional_answers: dict[str, Any], existing_config: dict[str, Any] | None) -> dict[str, Any]:
+        """Build final configuration data."""
         config_data = {
-            "display_name": answers["display_name"],
-            "module_name": answers["module_name"],
-            "repo_name": answers["repo_name"],
-            "author": answers["author"],
-            "description": description_answer,
-            "conflicts": [],
-            "targets": ["qt6"],
+            "display_name": basic_answers["display_name"],
+            "module_name": basic_answers["module_name"],
+            "repo_name": basic_answers["repo_name"],
+            "author": basic_answers["author"],
+            "description": description,
+            "conflicts": existing_config.get("conflicts", []) if existing_config else [],
+            "targets": existing_config.get("targets", ["qt6"]) if existing_config else ["qt6"],
             "ankiweb_id": optional_answers.get("ankiweb_id", ""),
         }
 
         # Add optional fields if provided
         for key, value in optional_answers.items():
             if key != "ankiweb_id" and value:
-                config_data[key] = value
+                if key == "tags" and isinstance(value, str):
+                    # Convert space-separated tags to list
+                    config_data[key] = value.split()
+                else:
+                    config_data[key] = value
+
+        # Preserve any additional fields from existing config that weren't prompted for
+        if existing_config:
+            preserve_fields = [
+                "copyright_start", "max_anki_version", "tested_anki_version",
+                "ankiweb_conflicts_with_local", "local_conflicts_with_ankiweb",
+                "build_config", "ui_config"
+            ]
+            for field in preserve_fields:
+                if field in existing_config:
+                    config_data[field] = existing_config[field]
 
         return config_data
 
-    def _get_default_config(self) -> dict[str, Any]:
+    def _get_default_config(self, existing_config: dict[str, Any] | None = None) -> dict[str, Any]:
         """Get default configuration for non-interactive mode."""
         dir_name = self.target_dir.name
-        return {
+        defaults = {
             "display_name": self._suggest_display_name(),
             "module_name": self._suggest_module_name(dir_name),
             "repo_name": self._suggest_repo_name(dir_name),
@@ -168,6 +255,16 @@ class ProjectInitializer:
             "targets": ["qt6"],
             "ankiweb_id": "",
         }
+        
+        if existing_config:
+            # Keep existing config, just ensure required fields exist
+            config_data = existing_config.copy()
+            for key, value in defaults.items():
+                if key not in config_data:
+                    config_data[key] = value
+            return config_data
+        
+        return defaults
 
     def _prompt(self, question: str, default: str, required: bool = True) -> str:
         """Prompt user for input with default value."""
@@ -209,6 +306,22 @@ class ProjectInitializer:
         # Remove multiple hyphens and leading/trailing hyphens
         name = re.sub(r"-+", "-", name).strip("-")
         return name or "my-addon"
+
+    def _get_config_value(self, existing_config: dict[str, Any] | None, key: str, default: str) -> str:
+        """Get configuration value with fallback to default."""
+        if not existing_config:
+            return default
+        return existing_config.get(key) or default
+
+    def _format_tags_for_display(self, tags: Any) -> str:
+        """Format tags for display in the questionary prompt."""
+        if not tags:
+            return ""
+        if isinstance(tags, list):
+            return " ".join(tags)
+        if isinstance(tags, str):
+            return tags
+        return str(tags)
 
     def _render_template(self, template_name: str, config: AddonConfig) -> str:
         """Render a template file with configuration values."""
