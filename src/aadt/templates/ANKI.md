@@ -4,7 +4,7 @@
 
 ## 📍 按需求快速定位
 
-### 🆕 我是开新项目 → @ankidoc/ANKI_CORE.md
+### 🆕 我是新开项目 → @ankidoc/ANKI_CORE.md
 - Anki 插件架构概览
 - 必知的导入规则和基础概念
 - CollectionOp/QueryOp 操作模式

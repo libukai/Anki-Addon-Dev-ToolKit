@@ -31,6 +31,7 @@
 
 import argparse
 import logging
+import shutil
 import sys
 from collections.abc import Callable
 from typing import Any
@@ -42,6 +43,7 @@ from aadt.git import VersionManager
 from aadt.init import ProjectInitializationError, ProjectInitializer
 from aadt.manifest import ManifestUtils
 from aadt.ui import UIBuilder
+from aadt.utils import copy_recursively
 
 
 class CLIError(Exception):
@@ -279,6 +281,23 @@ def claude(args: argparse.Namespace) -> None:
         )
         if anki_success:
             files_created.append("ANKI.md")
+
+        # Copy ankidoc directory
+        ankidoc_source = templates_dir / "ankidoc"
+        ankidoc_target = PATH_PROJECT_ROOT / "ankidoc"
+        
+        if ankidoc_source.exists():
+            if not ankidoc_target.exists() or args.force:
+                try:
+                    if ankidoc_target.exists() and args.force:
+                        # Remove existing directory if force is enabled
+                        shutil.rmtree(ankidoc_target)
+                    copy_recursively(ankidoc_source, ankidoc_target)
+                    files_created.append("ankidoc/")
+                except Exception as e:
+                    logging.warning(f"Failed to copy ankidoc directory: {e}")
+            else:
+                logging.info(f"Directory {ankidoc_target} already exists (use --force to overwrite)")
 
         # Show summary
         if files_created:
