@@ -316,6 +316,96 @@ def claude(args: argparse.Namespace) -> None:
         raise CLIError(f"Claude command failed: {e}") from e
 
 
+def no_warning(args: argparse.Namespace) -> None:
+    """Comment out warning messages in aqt.main.py to suppress startup warnings"""
+    try:
+        aqt_path = _find_aqt_package()
+        main_py_path = aqt_path / "main.py"
+        
+        if not main_py_path.exists():
+            raise CLIError(f"main.py not found in aqt package: {aqt_path}")
+        
+        lines = _read_main_py_file(main_py_path)
+        found_line = _find_target_line(lines)
+        
+        if _is_already_commented(lines[found_line]):
+            print(f"✅ Line {found_line + 1} is already commented out")
+            return
+        
+        _comment_target_line(lines, found_line)
+        _write_main_py_file(main_py_path, lines)
+        
+        print(f"✅ Successfully commented out warning line at {main_py_path}:{found_line + 1}")
+        print(f"📝 Modified line: {lines[found_line].strip()}")
+            
+    except Exception as e:
+        raise CLIError(f"No-warning command failed: {e}") from e
+
+
+def _find_aqt_package():
+    """Find aqt package in virtual environment"""
+    venv_path = PATH_PROJECT_ROOT / ".venv"
+    if not venv_path.exists():
+        raise CLIError("Virtual environment (.venv) not found in project root")
+    
+    site_packages_paths = [
+        venv_path / "lib" / "python3.13" / "site-packages",
+        venv_path / "Lib" / "site-packages",  # Windows
+    ]
+    
+    for site_packages in site_packages_paths:
+        potential_aqt = site_packages / "aqt"
+        if potential_aqt.exists():
+            return potential_aqt
+    
+    raise CLIError("aqt package not found in virtual environment")
+
+
+def _read_main_py_file(main_py_path):
+    """Read and split main.py file into lines"""
+    try:
+        content = main_py_path.read_text(encoding="utf-8")
+        return content.split('\n')
+    except Exception as e:
+        raise CLIError(f"Failed to read {main_py_path}: {e}") from e
+
+
+def _find_target_line(lines):
+    """Find the target line with showInfo pattern around line 1346"""
+    import re
+    # Match both commented and uncommented lines: showInfo(f"{tr or # showInfo(f"{tr
+    target_pattern = re.compile(r'^\s*#?\s*showInfo\(f["\'][^}]*\{tr')
+    search_start = max(0, 1346 - 20)
+    search_end = min(len(lines), 1346 + 20)
+    
+    for i in range(search_start, search_end):
+        if i < len(lines) and target_pattern.match(lines[i]):
+            return i
+    
+    raise CLIError(
+        "Could not find target line with showInfo pattern around line 1346"
+    )
+
+
+def _is_already_commented(line):
+    """Check if line is already commented"""
+    return line.strip().startswith('#')
+
+
+def _comment_target_line(lines, found_line):
+    """Comment out the target line"""
+    lines[found_line] = f"    # {lines[found_line].strip()}  # Commented by AADT no-warning"
+
+
+def _write_main_py_file(main_py_path, lines):
+    """Write lines back to main.py file"""
+    try:
+        new_content = '\n'.join(lines)
+        main_py_path.write_text(new_content, encoding="utf-8")
+    except Exception as e:
+        raise CLIError(f"Failed to write back to {main_py_path}: {e}") from e
+
+
 def _copy_file(source_path, output_path, force, file_description):
     """Helper function to copy a file"""
     try:
@@ -450,6 +540,12 @@ def construct_parser() -> argparse.ArgumentParser:
     )
     claude_group.set_defaults(func=claude)
 
+    no_warning_group = subparsers.add_parser(
+        "no-warning", 
+        help="Comment out warning messages in aqt.main.py to suppress startup warnings"
+    )
+    no_warning_group.set_defaults(func=no_warning)
+
     create_dist_group = subparsers.add_parser(
         "create_dist",
         parents=[build_parent, dist_parent],
@@ -510,8 +606,8 @@ def main() -> None:
         logging.info(COPYRIGHT_MSG)
 
     try:
-        # Skip validation for init command as it creates the project structure
-        if hasattr(args, "func") and args.func != init and not validate_cwd():
+        # Skip validation for init and no_warning commands
+        if hasattr(args, "func") and args.func not in (init, no_warning) and not validate_cwd():
             raise CLIError("Could not find 'src' or 'addon.json'. Please run this from the project root.")
 
         args.func(args)
